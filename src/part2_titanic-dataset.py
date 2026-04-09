@@ -1,34 +1,28 @@
-import pandas as pd  # Import pandas as alias
-
-# Load dataset 
-df = pd.read_csv("data/Titanic-Dataset.csv")
+import pandas as pd
 
 # -----------------------------
-# STEP 1: EXPLORATION
+# STEP 1: Load Dataset
 # -----------------------------
-
-print(df.head())      # Show first 5 rows
-print(df.info())      # Show column info (data types & nulls)
-print(df.describe())  # Statistical summary
+df = pd.read_csv("data/Titanic-Dataset.csv")  # ensure CSV is in data/
 
 # -----------------------------
-# STEP 2: DATA CLEANING
+# STEP 2: Data Cleaning
 # -----------------------------
 
-# Fill missing Age values with median
-df["Age"].fillna(df["Age"].median(), inplace=True)  #permanent update of data
+# Fill missing Age with median
+df["Age"].fillna(df["Age"].median(), inplace=True)
 
-# Fill missing Embarked values with mode (most frequent value)
+# Fill missing Embarked with mode
 df["Embarked"].fillna(df["Embarked"].mode()[0], inplace=True)
 
-# Drop Cabin column (too many missing values)
+# Drop Cabin column (too many missing)
 df.drop(columns=["Cabin"], inplace=True)
 
-# Remove duplicate rows (if any)
+# Remove duplicates if any
 df.drop_duplicates(inplace=True)
 
 # -----------------------------
-# STEP 3: DATA ANALYSIS
+# STEP 3: Analysis
 # -----------------------------
 
 # Survival rate by gender
@@ -37,51 +31,69 @@ print("Survival Rate by Gender:\n", survival_by_gender)
 
 # Survival rate by class
 survival_by_class = df.groupby("Pclass")["Survived"].mean()
-print("Survival Rate by Class:\n", survival_by_class)
+print("\nSurvival Rate by Class:\n", survival_by_class)
 
 # Average age per class
 avg_age_class = df.groupby("Pclass")["Age"].mean()
-print("Average Age per Class:\n", avg_age_class)
+print("\nAverage Age per Class:\n", avg_age_class)
 
-# Create age groups
-df["AgeGroup"] = pd.cut(df["Age"],
-                       bins=[0, 12, 18, 60, 100],
-                       labels=["Child", "Teen", "Adult", "Senior"])
+# Create Age Groups
+df["AgeGroup"] = pd.cut(df["Age"], bins=[0,12,18,60,100], labels=["Child","Teen","Adult","Senior"])
 
 # Survival rate by age group
 survival_by_age_group = df.groupby("AgeGroup")["Survived"].mean()
-print("Survival Rate by Age Group:\n", survival_by_age_group)
+print("\nSurvival Rate by Age Group:\n", survival_by_age_group)
 
 # -----------------------------
-# STEP 4: FILTERING
+# STEP 4: Filtering
 # -----------------------------
 
 # Female passengers who survived
-female_survived = df[(df["Sex"] == "female") & (df["Survived"] == 1)]
-print("Female Survivors:\n", female_survived)
+female_survived = df[(df["Sex"]=="female") & (df["Survived"]==1)]
+print("\nNumber of Female Survivors:", female_survived.shape[0])
 
-# Children who survived (Age < 12)
-children_survived = df[(df["Age"] < 12) & (df["Survived"] == 1)]
-print("Children Survivors:\n", children_survived)
+# Children who survived
+children_survived = df[(df["Age"]<12) & (df["Survived"]==1)]
+print("Number of Children Survivors:", children_survived.shape[0])
 
-# 1st class passengers with high survival (Survived = 1)
-first_class_survived = df[(df["Pclass"] == 1) & (df["Survived"] == 1)]
-print("1st Class Survivors:\n", first_class_survived)
+# First class passengers who survived
+first_class_survived = df[(df["Pclass"]==1) & (df["Survived"]==1)]
+print("Number of 1st Class Survivors:", first_class_survived.shape[0])
+
+# Female + 1st class survival rate
+female_1st_survival = df[(df["Sex"]=="female") & (df["Pclass"]==1)]["Survived"].mean()
+
+# Children + 1st class survival rate
+children_1st_survival = df[(df["Age"]<12) & (df["Pclass"]==1)]["Survived"].mean()
 
 # -----------------------------
-# STEP 5: INSIGHTS
+# STEP 5: Insights (Robust)
 # -----------------------------
 
 print("\n--- INSIGHTS ---")
 
-# 1. Who was more likely to survive?
-print("1. Females had a higher survival rate than males.")
+# 1. Gender effect
+if survival_by_gender["female"] > survival_by_gender["male"]:
+    print("1. Females had a higher survival rate than males.")
+elif survival_by_gender["female"] < survival_by_gender["male"]:
+    print("1. Males had a higher survival rate than females.")
+else:
+    print("1. Male and female survival rates were equal.")
 
-# 2. Did class affect survival?
-print("2. Yes, 1st class passengers had significantly higher survival rates than 2nd and 3rd class.")
+# 2. Class effect
+best_class = survival_by_class.idxmax()
+print(f"2. {best_class}st class passengers had the highest survival rate among classes.")
 
-# 3. Were children prioritized?
-print("3. Yes, children had higher survival rates compared to adults.")
+# 3. Age effect
+best_age_group = survival_by_age_group.idxmax()
+print(f"3. {best_age_group} had the highest survival rate among age groups.")
 
 # 4. Highest survival combination
-print("4. The highest survival rate was among female passengers in 1st class (especially children).")
+print(f"4. The highest survival combination is female passengers in 1st class: {female_1st_survival:.2f} survival rate.")
+
+# 5. Additional: Children survival
+if survival_by_age_group["Child"] > survival_by_age_group["Adult"]:
+    print("5. Children had higher survival rates than adults, indicating priority in rescue.")
+else:
+    print("5. Adults had equal or higher survival than children (rare in Titanic dataset).")
+
